@@ -3,17 +3,17 @@ import { FileCommitDetails } from '../../common/types';
 import { Status } from '../../types';
 import { BaseFileCommitCommand } from '../baseFileCommitCommand';
 
-export class ViewFileCommand extends BaseFileCommitCommand {
+export class OpenFileCommand extends BaseFileCommitCommand {
     constructor(fileCommit: FileCommitDetails, private handler: IGitFileHistoryCommandHandler) {
         super(fileCommit);
-        this.setTitle('$(eye) View this revision');
-        this.setCommand('git.commit.FileEntry.ViewFileContents');
+        this.setTitle('$(eye) Open file');
+        this.setCommand('git.commit.FileEntry.OpenFile');
         this.setCommandArguments([fileCommit]);
     }
     public async preExecute(): Promise<boolean> {
         return this.data.committedFile.status !== Status.Deleted;
     }
     public execute() {
-        this.handler.viewFile(this.data);
+        this.handler.openFile(this.data);
     }
 }

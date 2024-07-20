@@ -1,6 +1,6 @@
 import { CommittedFile, Status } from '../../../../definitions';
 import * as React from 'react';
-import { GoEye, GoGitCompare, GoHistory } from 'react-icons/go';
+import { GoEye, GoGitCompare, GoHistory, GoFile } from 'react-icons/go';
 
 interface FileEntryProps {
     committedFile: CommittedFile;
@@ -67,32 +67,48 @@ export class FileEntry extends React.Component<FileEntryProps> {
 
         const oldFile = ''; //this.props.committedFile.oldRelativePath || '';
         const constFileMovementSymbol = ''; //this.props.committedFile.oldRelativePath ? ' => ' : '';
-        let fileName = this.props.committedFile.relativePath;
-        if (fileName.lastIndexOf('/') != -1) {
-            fileName = fileName.substr(fileName.lastIndexOf('/') + 1);
+        const relativePath = this.props.committedFile.relativePath;
+        // if (fileName.lastIndexOf('/') != -1) {
+        //     fileName = fileName.substr(fileName.lastIndexOf('/') + 1);
+        // }
+        let fileNameClass = 'file-name';
+
+        if (
+            globalThis.settings !== undefined &&
+            globalThis.settings.relativePath !== undefined &&
+            globalThis.settings.relativePath.endsWith(relativePath)
+        ) {
+            fileNameClass = 'file-name-active';
+            this.props.onAction(this.props.committedFile, 'compare_previous'); //点击后直接打开对应的diff
         }
-        const fileNameClass = fileName == globalThis.fileName ? 'file-name-active' : 'file-name';
 
         return (
-            <div className="diff-row">
-                <div>
-                    <span className="diff-stats hint--right hint--rounded hint--bounce" aria-label={summary}>
-                        {blocks}
-                    </span>
-                </div>
-                <div>{this.renderStatus()}</div>
-                <div className="file-name-cnt">
-                    <span className={fileNameClass}>
-                        {oldFile}
-                        {constFileMovementSymbol}
-                        {this.props.committedFile.relativePath}
-                    </span>
+            <div className="diff-col">
+                <div className="diff-row">
+                    <div>
+                        <span className="diff-stats hint--right hint--rounded hint--bounce" aria-label={summary}>
+                            {blocks}
+                        </span>
+                    </div>
+                    <div>{this.renderStatus()}</div>
+                    <div className="file-name-cnt">
+                        <span className={fileNameClass}>
+                            {oldFile}
+                            {constFileMovementSymbol}
+                            {this.props.committedFile.relativePath}
+                        </span>
+                    </div>
                 </div>
                 <div className="file-action">
+                    <span role="button" className="btnx hint--right hint--rounded hint--bounce" aria-label="Open file">
+                        <a role="button" onClick={() => this.props.onAction(this.props.committedFile, 'open')}>
+                            <GoFile></GoFile> Open
+                        </a>
+                    </span>
                     <span
                         role="button"
-                        className="btnx hint--left hint--rounded hint--bounce"
-                        aria-label="View file content"
+                        className="btnx hint--right hint--rounded hint--bounce"
+                        aria-label="View this revision"
                     >
                         <a role="button" onClick={() => this.props.onAction(this.props.committedFile, 'view')}>
                             <GoEye></GoEye> View
@@ -100,7 +116,7 @@ export class FileEntry extends React.Component<FileEntryProps> {
                     </span>
                     <span
                         role="button"
-                        className="btnx hint--left hint--rounded hint--bounce"
+                        className="btnx hint--right hint--rounded hint--bounce"
                         aria-label="Compare file with current workspace"
                     >
                         <a

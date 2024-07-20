@@ -2,8 +2,8 @@
     "name": "githistory",
     "displayName": "Git History",
     "description": "View git log, file history, compare branches or commits",
-    "version": "0.6.20",
-    "publisher": "donjayamanne",
+    "version": "1.9.5",
+    "publisher": "Arming",
     "author": {
         "name": "Don Jayamanne",
         "email": "don.jayamanne@yahoo.com"
@@ -96,6 +96,10 @@
             {
                 "command": "git.commit.FileEntry.ViewFileContents",
                 "title": "View File Contents"
+            },
+            {
+                "command": "git.commit.FileEntry.OpenFile",
+                "title": "Open File"
             },
             {
                 "command": "git.commit.FileEntry.CompareAgainstWorkspace",
@@ -245,6 +249,10 @@
                     "when": "view == commitViewProvider && viewItem == file"
                 },
                 {
+                    "command": "git.commit.FileEntry.OpenFile",
+                    "when": "view == commitViewProvider && viewItem == file"
+                },
+                {
                     "command": "git.commit.FileEntry.CompareAgainstWorkspace",
                     "when": "view == commitViewProvider && viewItem == file"
                 },
@@ -378,7 +386,7 @@
                 },
                 "gitHistory.sideBySide": {
                     "type": "boolean",
-                    "default": false,
+                    "default": true,
                     "scope": "application",
                     "description": "Show commit details in side-by-side view"
                 },
@@ -410,12 +418,12 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run lint && tsc --skipLibCheck -p ./ && webpack -p --progress",
+        "vscode:prepublish": "NODE_OPTIONS=--openssl-legacy-provider && npm run lint && tsc --skipLibCheck -p ./ && webpack -p --progress",
         "test-compile": "tsc --skipLibCheck --watch -p ./",
         "test": "jest",
         "test-extension": "node ./dist/test/runTest.js",
-        "webpack": "webpack -p --progress --colors",
-        "webpack-dev": "webpack --progress --colors --watch",
+        "webpack": "NODE_OPTIONS=--openssl-legacy-provider webpack -p --progress --colors",
+        "webpack-dev": "NODE_OPTIONS=--openssl-legacy-provider webpack --progress --colors --watch",
         "lint": "eslint 'src/**/*.ts' && eslint 'browser/src/**/*.ts*'",
         "fix": "eslint --fix \"src/**/*.ts\" && eslint --fix \"browser/src/**/*.ts*\"",
         "precommit": "lint-staged",

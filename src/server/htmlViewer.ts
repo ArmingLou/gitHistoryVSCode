@@ -7,6 +7,7 @@ import { ICommandManager } from '../application/types';
 import { IServiceContainer } from '../ioc/types';
 import { BranchSelection, IGitServiceFactory } from '../types';
 import { ApiController } from './apiController';
+import * as vscode from 'vscode';
 
 export class HtmlViewer {
     private readonly disposable: Disposable[] = [];
@@ -25,10 +26,25 @@ export class HtmlViewer {
     public dispose() {
         this.disposable.forEach(disposable => disposable.dispose());
     }
-    private onPreviewHtml = (uri: string, column: ViewColumn, title: string, fileName?: string) => {
-        this.createHtmlView(Uri.parse(uri), column, title, fileName);
+    private onPreviewHtml = (uri: string, column: ViewColumn, title: string, fileName?: string, ...rest: any[]) => {
+        this.createHtmlView(Uri.parse(uri), column, title, fileName, ...rest);
     };
-    private async createHtmlView(uri: Uri, column: ViewColumn, title: string, fileName?: string) {
+    private async createHtmlView(uri: Uri, column: ViewColumn, title: string, fileName?: string, ..._rest: any[]) {
+        // if (fileName !== undefined && fileName.startsWith('/')) {
+        //     // 特殊处理，用于 在原来的layout 打开文件对比 等
+        //     const cmd = fileName.substring(1);
+
+        //     const webviewPanel = await window.createWebviewPanel('gitLog', title, column, {
+        //         enableScripts: true,
+        //         retainContextWhenHidden: true,
+        //     });
+
+        //     await this.commandManager.executeCommand(cmd, ...rest);
+
+        //     webviewPanel.dispose();
+
+        //     return;
+        // }
         if (this.htmlView.has(uri.toString())) {
             // skip recreating a webview, when already exist
             // and reveal it in tab view
@@ -58,6 +74,11 @@ export class HtmlViewer {
         const gitService = this.gitServiceFactory.getService(id);
         new ApiController(webviewPanel.webview, gitService, this.serviceContainer, this.commandManager);
 
+        if (column === ViewColumn.Two) {
+            vscode.commands.executeCommand('workbench.action.editorLayoutTwoRows');
+        }
+        vscode.commands.executeCommand('workbench.action.closePanel');
+
         webviewPanel.onDidDispose(() => {
             if (this.htmlView.has(uri.toString())) {
                 this.htmlView.delete(uri.toString());
@@ -74,12 +95,16 @@ export class HtmlViewer {
             branchName = detached;
         }
 
+        // 获取工作空间相对路径
+        const relativePath = vscode.workspace.asRelativePath(file);
+
         const settings = {
             id,
             branchName,
             file,
             line,
             branchSelection,
+            relativePath,
         };
 
         webviewPanel.webview.html = this.getHtmlContent(webviewPanel.webview, settings, fileName);

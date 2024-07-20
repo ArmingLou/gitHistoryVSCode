@@ -8,6 +8,7 @@ import { CompareFileWithWorkspaceCommand } from '../commands/fileCommit/compareF
 import { ViewFileHistoryCommand } from '../commands/fileCommit/fileHistory';
 import { SelectFileForComparison } from '../commands/fileCommit/selectFileForComparison';
 import { ViewFileCommand } from '../commands/fileCommit/viewFile';
+import { OpenFileCommand } from '../commands/fileCommit/openFile';
 import { ViewPreviousFileCommand } from '../commands/fileCommit/viewPreviousFile';
 import { CompareFileCommitDetails, FileCommitDetails, ICommand } from '../common/types';
 import { IServiceContainer } from '../ioc/types';
@@ -24,6 +25,7 @@ export class FileCommitCommandFactory implements IFileCommitCommandFactory {
 
     public async createCommands(fileCommit: FileCommitDetails): Promise<ICommand<FileCommitDetails>[]> {
         const commands = [
+            new OpenFileCommand(fileCommit, this.fileHistoryCommandHandler),
             new ViewFileCommand(fileCommit, this.fileHistoryCommandHandler),
             new CompareFileWithWorkspaceCommand(fileCommit, this.fileHistoryCommandHandler, this.serviceContainer),
             new CompareFileWithPreviousCommand(fileCommit, this.fileHistoryCommandHandler),

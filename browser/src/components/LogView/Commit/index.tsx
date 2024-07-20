@@ -113,27 +113,27 @@ class Commit extends React.Component<CommitProps, CommitState> {
                         <div className="commit-body">{gitmojify(this.props.selectedEntry.body)}</div>
                         <div className="commit-notes">{gitmojify(this.props.selectedEntry.notes)}</div>
                     </div>
-                    <div className="actions">
-                        <input
-                            ref={x => {
-                                this.ref = x;
-                            }}
-                            className={'textInput'}
-                            type="text"
-                            value={this.state.searchText}
-                            placeholder="Find file"
-                            onKeyDown={this.handleKeyDown}
-                            onChange={this.handleSearchChange}
-                        />
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-default hint--bottom-left hint--rounded hint--bounce"
-                            aria-label="Close the detail view"
-                            onClick={this.onClose}
-                        >
-                            <GoX />
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        className="btn btn-sm btn-default hint--bottom-left hint--rounded hint--bounce"
+                        aria-label="Close the detail view"
+                        onClick={this.onClose}
+                    >
+                        <GoX />
+                    </button>
+                </div>
+                <div className="actions">
+                    <input
+                        ref={x => {
+                            this.ref = x;
+                        }}
+                        className={'textInput'}
+                        type="text"
+                        value={this.state.searchText}
+                        placeholder="Find file"
+                        onKeyDown={this.handleKeyDown}
+                        onChange={this.handleSearchChange}
+                    />
                 </div>
                 <div className="comitted-files">{this.renderFileEntries()}</div>
             </div>

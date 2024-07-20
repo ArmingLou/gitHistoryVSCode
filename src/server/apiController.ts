@@ -187,6 +187,9 @@ export class ApiController {
 
         switch (actionName) {
             default:
+            case 'open':
+                await this.commandManager.executeCommand('git.commit.FileEntry.OpenFile', fileCommitDetails);
+                break;
             case 'view':
                 await this.commandManager.executeCommand('git.commit.FileEntry.ViewFileContents', fileCommitDetails);
                 break;

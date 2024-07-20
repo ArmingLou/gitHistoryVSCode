@@ -16,7 +16,8 @@
     },
     "typescript.tsdk": "./node_modules/typescript/lib",
     "[typescript]": {
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
     },
     "[javascript]": {
         "editor.formatOnSave": true
@@ -28,6 +29,6 @@
         "editor.formatOnSave": true
     },
     "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true
+        "source.fixAll.eslint": "explicit"
     },
 }
