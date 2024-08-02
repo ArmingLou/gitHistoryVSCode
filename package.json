@@ -2,7 +2,7 @@
     "name": "githistory",
     "displayName": "Git History",
     "description": "View git log, file history, compare branches or commits",
-    "version": "1.9.5",
+    "version": "2.0.0",
     "publisher": "Arming",
     "author": {
         "name": "Don Jayamanne",
@@ -152,7 +152,13 @@
             {
                 "command": "git.commit.view.showFolderView",
                 "title": "Show folder view"
-            }
+            },
+            {
+				"command": "git.openFileInViewer",
+				"title": "Open File",
+				"icon": "$(go-to-file)",
+				"enablement": "isInDiffEditor && resourceScheme == git-history"
+			}
         ],
         "keybindings": [
             {
@@ -189,7 +195,12 @@
                     "command": "git.viewHistory",
                     "group": "navigation",
                     "when": "config.git.enabled && config.gitHistory.editorTitleButtonOpenRepo && resourceScheme == file && gitOpenRepositoryCount != 0 && config.gitHistory.showEditorTitleMenuBarIcons"
-                }
+                },
+                {
+					"command": "git.openFileInViewer",
+					"group": "navigation",
+					"when": "isInDiffEditor && resourceScheme == git-history"
+				}
             ],
             "editor/title/context": [
                 {

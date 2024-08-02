@@ -5,6 +5,7 @@
             "dom",
             "es6"
         ],
+        "types": ["node"],
         "module": "commonjs",
         "moduleResolution": "node",
         "outDir": "dist",

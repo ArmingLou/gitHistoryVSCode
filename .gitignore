@@ -14,3 +14,4 @@ npm-debug.log
 !yarn.lock
 coverage/
 temp/**
+*.vsix

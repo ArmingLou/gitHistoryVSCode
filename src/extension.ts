@@ -34,6 +34,7 @@ import { registerTypes as registerViewerTypes } from './viewers/serviceRegistry'
 import { getTelemetryReporter, sendTelemetryEvent } from './common/telemetry';
 import { StopWatch } from './common/stopWatch';
 import { extensionRoot } from './constants';
+import { DiffDocProvider } from './utils/diffDocProvider';
 
 let cont: Container;
 let serviceManager: ServiceManager;
@@ -85,6 +86,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<any> {
 
     context.subscriptions.push(serviceManager.get<IDisposableRegistry>(IDisposableRegistry));
     context.subscriptions.push(serviceManager.get<IDisposableRegistry>(IDisposableRegistry));
+    context.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider(
+            DiffDocProvider.scheme,
+            new DiffDocProvider(serviceManager.get<IServiceContainer>(IServiceContainer)),
+        ),
+    );
 
     const commandManager = serviceContainer.get<ICommandManager>(ICommandManager);
     commandManager.executeCommand('setContext', 'git.commit.view.show', true);

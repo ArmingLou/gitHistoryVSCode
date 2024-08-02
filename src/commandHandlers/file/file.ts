@@ -1,24 +1,24 @@
 import { inject, injectable } from 'inversify';
-import { Uri } from 'vscode';
-import { ICommandManager, IDocumentManager } from '../../application/types';
+import { Uri, ViewColumn } from 'vscode';
+import { ICommandManager } from '../../application/types';
 import { command } from '../registration';
 import { IFileCommandHandler } from '../types';
-import { isTextFile } from './mimeTypes';
+import { DiffDocProvider, decodeDiffDocUri } from '../../utils/diffDocProvider';
 
 @injectable()
 export class FileCommandHandler implements IFileCommandHandler {
-    constructor(
-        @inject(ICommandManager) private commandManager: ICommandManager,
-        @inject(IDocumentManager) private documentManager: IDocumentManager,
-    ) {}
+    constructor(@inject(ICommandManager) private commandManager: ICommandManager) {}
 
     @command('git.openFileInViewer', IFileCommandHandler)
-    public async openFile(file: Uri): Promise<void> {
-        if (isTextFile(file)) {
-            const doc = await this.documentManager.openTextDocument(file);
-            await this.documentManager.showTextDocument(doc, { preview: true });
+    public async openFile(uri: Uri): Promise<void> {
+        if (uri.scheme === DiffDocProvider.scheme) {
+            const fileCommit = decodeDiffDocUri(uri);
+            await this.commandManager.executeCommand('vscode.open', Uri.file(fileCommit.file.fsPath), {
+                preview: true,
+                viewColumn: ViewColumn.One,
+            });
         } else {
-            await this.commandManager.executeCommand('vscode.open', file);
+            await this.commandManager.executeCommand('vscode.open', uri);
         }
     }
 }

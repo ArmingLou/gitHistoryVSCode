@@ -32,7 +32,7 @@
     },
     "include": [
         "src/**/*"
-    ],
+, "../src/utils"    ],
     "exclude": [
         "dist",
         "build",
