@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { FsUri, Hash, IGitServiceFactory } from '../types';
+import { FsUri, Hash, IGitServiceFactory, Status } from '../types';
 import { IServiceContainer } from '../ioc/types';
 import path = require('path');
 
@@ -34,6 +34,9 @@ export class DiffDocProvider implements vscode.TextDocumentContentProvider {
      */
     public provideTextDocumentContent(uri: vscode.Uri): string | Thenable<string> {
         const request = decodeDiffDocUri(uri);
+        if (request.status === Status.Deleted) {
+            return Promise.resolve('');
+        }
         return this.serviceContainer
             .get<IGitServiceFactory>(IGitServiceFactory)
             .createGitService(request.workspaceFolder)
@@ -56,6 +59,7 @@ export type DiffDocUriData = {
     hash: Hash;
     file: FsUri;
     workspaceFolder: string;
+    status: Status;
 };
 
 /**

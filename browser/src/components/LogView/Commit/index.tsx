@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { CommittedFile, LogEntry } from '../../../definitions';
+import { CommittedFile, FsUri, LogEntry, Status } from '../../../definitions';
 import { RootState } from '../../../reducers';
 import Author from './Author';
 import Avatar from './Avatar';
@@ -51,27 +51,76 @@ class Commit extends React.Component<CommitProps, CommitState> {
         this.props.closeCommitView();
     };
     private renderFileEntries() {
+        let re = '';
+        let f = null;
+        let raw = [];
         if (this.state.searchText) {
-            return this.props.selectedEntry.committedFiles
+            raw = this.props.selectedEntry.committedFiles
                 .filter(x => x.relativePath.toLowerCase().indexOf(this.state.searchText.toLowerCase()) !== -1)
-                .map((fileEntry, index) => (
+                .map((fileEntry, index) => {
+                    let current = false;
+                    if (
+                        globalThis.settings !== undefined &&
+                        globalThis.settings.relativePath !== undefined &&
+                        globalThis.settings.relativePath.endsWith(fileEntry.relativePath)
+                    ) {
+                        f = fileEntry;
+                        current = true;
+                    }
+                    const res = (
+                        <FileEntry
+                            current={current}
+                            lastRelativePath={re}
+                            theme={this.props.theme}
+                            committedFile={fileEntry}
+                            key={index + fileEntry.relativePath}
+                            onAction={this.onActionFile}
+                        />
+                    );
+                    re = fileEntry.relativePath;
+                    return res;
+                });
+        } else {
+            raw = this.props.selectedEntry.committedFiles.map((fileEntry, index) => {
+                let current = false;
+                if (
+                    globalThis.settings !== undefined &&
+                    globalThis.settings.relativePath !== undefined &&
+                    globalThis.settings.relativePath.endsWith(fileEntry.relativePath)
+                ) {
+                    f = fileEntry;
+                    current = true;
+                }
+                const res = (
                     <FileEntry
+                        current={current}
+                        lastRelativePath={re}
                         theme={this.props.theme}
                         committedFile={fileEntry}
                         key={index + fileEntry.relativePath}
                         onAction={this.onActionFile}
                     />
-                ));
-        } else {
-            return this.props.selectedEntry.committedFiles.map((fileEntry, index) => (
-                <FileEntry
-                    theme={this.props.theme}
-                    committedFile={fileEntry}
-                    key={index + fileEntry.relativePath}
-                    onAction={this.onActionFile}
-                />
-            ));
+                );
+                re = fileEntry.relativePath;
+                return res;
+            });
         }
+        if (f !== null) {
+            this.onActionFile(f, 'compare_previous'); //点击后直接打开对应的diff
+        } else {
+            // 深拷贝
+            // f0 = JSON.parse(JSON.stringify(this.props.selectedEntry.committedFiles[0])) as CommittedFile;
+            // f0.relativePath = '';
+            this.onActionFile(
+                {
+                    uri: { fsPath: globalThis.settings.relativePath as string } as FsUri,
+                    status: Status.Deleted,
+                    relativePath: globalThis.settings.relativePath as string,
+                } as CommittedFile,
+                'view',
+            );
+        }
+        return raw;
     }
     private handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         this.setState({ searchText: e.target.value });

@@ -2,7 +2,7 @@
     "name": "githistory",
     "displayName": "Git History",
     "description": "View git log, file history, compare branches or commits",
-    "version": "2.0.0",
+    "version": "2.8.0",
     "publisher": "Arming",
     "author": {
         "name": "Don Jayamanne",

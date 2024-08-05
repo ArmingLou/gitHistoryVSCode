@@ -554,13 +554,30 @@ header .links {
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	margin: 0.5em 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: start;
+    align-items: center;
+}
+
+.mini-size {
+    display: flex;
+    font-size: 0.8em;
+    flex-wrap: wrap;
+    width: max-content;
+}
+
+.mini-size-margin {
+    margin-left: .5em;
 }
 
 .diff-row div.file-name-cnt {
-	flex-grow: 1;
+    width: max-content;
 	white-space: normal;
+    word-wrap: break-word;
+    word-break: keep-all;
 	margin-left: .5em;
-	word-break: break-all;
 }
 
 .file-name-active {
@@ -606,10 +623,6 @@ header .links {
     border-bottom-width: 1px;
 	border-bottom-style: solid;
 	border-bottom-color: var(--vscode-editorGroup-border);
-}
-.diff-row {
-	display: flex;
-	justify-content: space-between;
 }
 
 .diff-stats .diff-block {
