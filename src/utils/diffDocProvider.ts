@@ -34,19 +34,23 @@ export class DiffDocProvider implements vscode.TextDocumentContentProvider {
      */
     public provideTextDocumentContent(uri: vscode.Uri): string | Thenable<string> {
         const request = decodeDiffDocUri(uri);
-        if (request.status === Status.Deleted) {
+        if (request.file.scheme === 'error') {
+            // 约定 file.scheme === error 为错误标识，让 vscode 打开 文件 显示错误信息。错误信息来自 file.fragment
+            return Promise.reject(request.file.fragment);
+        } else if (request.status === Status.Deleted) {
             return Promise.resolve('');
+        } else {
+            return this.serviceContainer
+                .get<IGitServiceFactory>(IGitServiceFactory)
+                .createGitService(request.workspaceFolder)
+                .then(gitService =>
+                    gitService
+                        .getCommitFile(request.hash.full, request.file)
+                        .then(tempFile =>
+                            vscode.workspace.fs.readFile(tempFile).then(data => Buffer.from(data).toString('utf8')),
+                        ),
+                );
         }
-        return this.serviceContainer
-            .get<IGitServiceFactory>(IGitServiceFactory)
-            .createGitService(request.workspaceFolder)
-            .then(gitService =>
-                gitService
-                    .getCommitFile(request.hash.full, request.file)
-                    .then(tempFile =>
-                        vscode.workspace.fs.readFile(tempFile).then(data => Buffer.from(data).toString('utf8')),
-                    ),
-            );
     }
 }
 
@@ -60,6 +64,7 @@ export type DiffDocUriData = {
     file: FsUri;
     workspaceFolder: string;
     status: Status;
+    specialPath?: string;
 };
 
 /**
@@ -76,9 +81,15 @@ export function encodeDiffDocUri(nodeOrFileCommit: DiffDocUriData): vscode.Uri {
     // const extIndex = nodeOrFileCommit.file.fsPath.indexOf('.', nodeOrFileCommit.file.fsPath.lastIndexOf('/') + 1);
     // extension = extIndex > -1 ? nodeOrFileCommit.file.fsPath.substring(extIndex) : '';
 
-    const leftFileName = path.basename(nodeOrFileCommit.file.fsPath);
+    let name = '';
+    if (nodeOrFileCommit.specialPath) {
+        name = nodeOrFileCommit.specialPath;
+    } else {
+        const leftFileName = path.basename(nodeOrFileCommit.file.fsPath);
+        name = path.dirname(nodeOrFileCommit.file.fsPath) + '/(' + nodeOrFileCommit.hash.short + ')' + leftFileName;
+    }
 
-    return vscode.Uri.file('(' + nodeOrFileCommit.hash.short + ')' + leftFileName).with({
+    return vscode.Uri.file(name).with({
         scheme: DiffDocProvider.scheme,
         query: Buffer.from(JSON.stringify(nodeOrFileCommit)).toString('base64'),
     });

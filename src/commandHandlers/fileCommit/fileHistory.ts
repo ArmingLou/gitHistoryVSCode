@@ -10,6 +10,7 @@ import { Hash, IGitServiceFactory, Status } from '../../types';
 import { command } from '../registration';
 import { IGitFileHistoryCommandHandler } from '../types';
 import { encodeDiffDocUri } from '../../utils/diffDocProvider';
+import { IFileSystem } from '../../platform/types';
 
 @injectable()
 export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandler {
@@ -17,6 +18,7 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
         @inject(IServiceContainer) private serviceContainer: IServiceContainer,
         @inject(ICommandManager) private commandManager: ICommandManager,
         @inject(IApplicationShell) private applicationShell: IApplicationShell,
+        @inject(IFileSystem) private fileSystem: IFileSystem,
     ) {}
 
     @command('git.commit.FileEntry.OpenFile', IGitFileHistoryCommandHandler)
@@ -28,7 +30,6 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
             tmpFile = Uri.file(fileCommit.workspaceFolder);
         }
         // await this.commandManager.executeCommand('git.openFileInViewer', tmpFile);
-        // TODO Arming (2024-07-18) :
         await this.commandManager.executeCommand(
             'vscode.open', //特殊处理，在原来的 layout 执行 vscode.open
             tmpFile,
@@ -48,14 +49,13 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
             workspaceFolder: fileCommit.workspaceFolder,
             status: fileCommit.committedFile.status,
         });
-        if (fileCommit.committedFile.status === Status.Deleted) {
-            // return this.applicationShell.showErrorMessage('File cannot be viewed as it was deleted').then(() => void 0);
-            // current = Uri.file(fileCommit.workspaceFolder);
-        }
+        // if (fileCommit.committedFile.status === Status.Deleted) {
+        //     return this.applicationShell.showErrorMessage('File cannot be viewed as it was deleted').then(() => void 0);
+        //     current = Uri.file(fileCommit.workspaceFolder);
+        // }
 
         // const tmpFile = await gitService.getCommitFile(fileCommit.logEntry.hash.full, fileCommit.committedFile.uri);
         // await this.commandManager.executeCommand('git.openFileInViewer', tmpFile);
-        // TODO Arming (2024-07-18) :
         // await this.commandManager.executeCommand(
         //     'previewHtml',
         //     '',
@@ -87,19 +87,28 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
             file: fileCommit.committedFile.uri,
             workspaceFolder: fileCommit.workspaceFolder,
             status: fileCommit.committedFile.status,
+            specialPath: fileCommit.committedFile.uri.fsPath,
         });
+        let wspUri = Uri.file(fileCommit.committedFile.uri.fsPath);
 
-        if (fileCommit.committedFile.status === Status.Deleted) {
-            // return this.applicationShell
-            //     .showErrorMessage('File cannot be compared with, as it was deleted')
-            //     .then(() => void 0);
-            // currentUri = Uri.file(fileCommit.workspaceFolder);
-        }
-        // if (!(await this.fileSystem.fileExistsAsync(fileCommit.committedFile.uri.path))) {
+        // if (fileCommit.committedFile.status === Status.Deleted) {
         //     return this.applicationShell
-        //         .showErrorMessage('Corresponding workspace file does not exist')
+        //         .showErrorMessage('File cannot be compared with, as it was deleted')
         //         .then(() => void 0);
+        //     currentUri = Uri.file(fileCommit.workspaceFolder);
         // }
+        if (!(await this.fileSystem.fileExistsAsync(fileCommit.committedFile.uri.fsPath))) {
+            // return this.applicationShell
+            //     .showErrorMessage('Corresponding workspace file does not exist')
+            //     .then(() => void 0);
+            wspUri = encodeDiffDocUri({
+                hash: { full: '', short: '' },
+                file: fileCommit.committedFile.uri,
+                workspaceFolder: fileCommit.workspaceFolder,
+                status: Status.Deleted, // 令其返回空文档
+                specialPath: fileCommit.committedFile.uri.fsPath,
+            });
+        }
 
         // const tmpFile = await gitService.getCommitFile(fileCommit.logEntry.hash.full, fileCommit.committedFile.uri);
         const fileName = path.basename(fileCommit.committedFile.uri.path);
@@ -111,7 +120,6 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
         //     title,
         //     { preview: true },
         // );
-        // TODO Arming (2024-07-18) :
         // await this.commandManager.executeCommand(
         //     'previewHtml',
         //     '',
@@ -133,16 +141,10 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
         //         viewColumn: ViewColumn.One,
         //     },
         // );
-        await this.commandManager.executeCommand(
-            'vscode.diff',
-            currentUri,
-            Uri.file(fileCommit.committedFile.uri.path),
-            title,
-            {
-                preview: true,
-                viewColumn: ViewColumn.One,
-            },
-        );
+        await this.commandManager.executeCommand('vscode.diff', currentUri, wspUri, title, {
+            preview: true,
+            viewColumn: ViewColumn.One,
+        });
     }
 
     @command('git.commit.FileEntry.CompareAgainstPrevious', IGitFileHistoryCommandHandler)
@@ -154,46 +156,96 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
             file: fileCommit.committedFile.uri,
             workspaceFolder: fileCommit.workspaceFolder,
             status: fileCommit.committedFile.status,
+            specialPath: fileCommit.committedFile.uri.fsPath,
         });
+        let previewUri = Uri.file(fileCommit.committedFile.uri.fsPath);
+        let title = '';
 
-        if (fileCommit.committedFile.status === Status.Deleted) {
-            // return this.applicationShell
-            //     .showErrorMessage('File cannot be compared with, as it was deleted')
-            //     .then(() => void 0);
-            // currentUri = Uri.file(fileCommit.workspaceFolder);
-        }
+        // if (fileCommit.committedFile.status === Status.Renamed) {
+        //     // 仅移动或改文件名了
+        //     fileCommit.committedFile.uri.scheme = 'error'; // 令其返回打开文档显示错误信息
+        //     fileCommit.committedFile.uri.fragment = 'This revision was only moved or renamed';
+        //     currentUri = encodeDiffDocUri({
+        //         hash: fileCommit.logEntry.hash,
+        //         file: fileCommit.committedFile.uri,
+        //         workspaceFolder: fileCommit.workspaceFolder,
+        //         status: fileCommit.committedFile.status,
+        //     });
+        //     await this.commandManager.executeCommand(
+        //         'vscode.open', //特殊处理，在原来的 layout 执行 vscode.open
+        //         currentUri,
+        //         { preview: true, viewColumn: ViewColumn.One },
+        //     );
+        //     return;
+        // }
+
+        // if (fileCommit.committedFile.status === Status.Deleted) {
+        //     return this.applicationShell
+        //         .showErrorMessage('File cannot be compared with, as it was deleted')
+        //         .then(() => void 0);
+        //     currentUri = Uri.file(fileCommit.workspaceFolder);
+        // }
         if (fileCommit.committedFile.status === Status.Added) {
-            await this.commandManager.executeCommand(
-                'vscode.open', //特殊处理，在原来的 layout 执行 vscode.open
-                currentUri,
-                { preview: true, viewColumn: ViewColumn.One },
-            );
+            previewUri = encodeDiffDocUri({
+                hash: { full: '', short: '' },
+                file: fileCommit.committedFile.uri,
+                workspaceFolder: fileCommit.workspaceFolder,
+                status: Status.Deleted, // 令其返回空文档
+                specialPath: fileCommit.committedFile.uri.fsPath,
+            });
+
+            const leftFileName = path.basename(fileCommit.committedFile.uri.fsPath);
+            title = `${leftFileName} (Added in ${fileCommit.logEntry.hash.short})`;
+
+            // await this.commandManager.executeCommand(
+            //     'vscode.open', //特殊处理，在原来的 layout 执行 vscode.open
+            //     currentUri,
+            //     { preview: true, viewColumn: ViewColumn.One },
+            // );
             // return this.applicationShell
             //     .showErrorMessage('File cannot be compared with previous, as this is a new file')
             //     .then(() => void 0);
-            return;
+        } else if (fileCommit.committedFile.status === Status.Renamed) {
+            const leftFileName = path.basename(fileCommit.committedFile.uri.fsPath);
+            previewUri = encodeDiffDocUri({
+                hash: fileCommit.logEntry.hash,
+                file: fileCommit.committedFile.uri,
+                workspaceFolder: fileCommit.workspaceFolder,
+                status: Status.Modified,
+                specialPath: fileCommit.committedFile.uri.fsPath,
+            });
+
+            title = `${leftFileName} (Renamed in ${fileCommit.logEntry.hash.short})`;
+        } else {
+            // const tmpFile = await gitService.getCommitFile(fileCommit.logEntry.hash.full, fileCommit.committedFile.uri);
+            const gitService = await this.serviceContainer
+                .get<IGitServiceFactory>(IGitServiceFactory)
+                .createGitService(fileCommit.workspaceFolder);
+            const previousCommitHash = await gitService.getPreviousCommitHashForFile(
+                fileCommit.logEntry.hash.full,
+                fileCommit.committedFile.uri,
+            );
+
+            const previousFile = fileCommit.committedFile.oldUri
+                ? fileCommit.committedFile.oldUri
+                : fileCommit.committedFile.uri;
+            // const previousTmpFile = await gitService.getCommitFile(previousCommitHash.full, previousFile);
+
+            previewUri = encodeDiffDocUri({
+                hash: previousCommitHash,
+                file: previousFile,
+                workspaceFolder: fileCommit.workspaceFolder,
+                status: Status.Modified,
+                specialPath: fileCommit.committedFile.uri.fsPath,
+            });
+
+            title = this.getComparisonTitle(
+                { file: Uri.file(previousFile.fsPath), hash: previousCommitHash },
+                { file: Uri.file(fileCommit.committedFile.uri.fsPath), hash: fileCommit.logEntry.hash },
+            );
         }
 
-        // const tmpFile = await gitService.getCommitFile(fileCommit.logEntry.hash.full, fileCommit.committedFile.uri);
-        const gitService = await this.serviceContainer
-            .get<IGitServiceFactory>(IGitServiceFactory)
-            .createGitService(fileCommit.workspaceFolder);
-        const previousCommitHash = await gitService.getPreviousCommitHashForFile(
-            fileCommit.logEntry.hash.full,
-            fileCommit.committedFile.uri,
-        );
-
-        const previousFile = fileCommit.committedFile.oldUri
-            ? fileCommit.committedFile.oldUri
-            : fileCommit.committedFile.uri;
-        // const previousTmpFile = await gitService.getCommitFile(previousCommitHash.full, previousFile);
-
-        const title = this.getComparisonTitle(
-            { file: Uri.file(previousFile.path), hash: previousCommitHash },
-            { file: Uri.file(fileCommit.committedFile.uri.path), hash: fileCommit.logEntry.hash },
-        );
         // await this.commandManager.executeCommand('vscode.diff', previousTmpFile, tmpFile, title, { preview: true });
-        // TODO Arming (2024-07-18) :
         // await this.commandManager.executeCommand(
         //     'previewHtml',
         //     '',
@@ -205,21 +257,10 @@ export class GitFileHistoryCommandHandler implements IGitFileHistoryCommandHandl
         //     title,
         //     { preview: true },
         // );
-        await this.commandManager.executeCommand(
-            'vscode.diff',
-            encodeDiffDocUri({
-                hash: previousCommitHash,
-                file: previousFile,
-                workspaceFolder: fileCommit.workspaceFolder,
-                status: Status.Modified,
-            }),
-            currentUri,
-            title,
-            {
-                preview: true,
-                viewColumn: ViewColumn.One,
-            },
-        );
+        await this.commandManager.executeCommand('vscode.diff', previewUri, currentUri, title, {
+            preview: true,
+            viewColumn: ViewColumn.One,
+        });
         // await this.commandManager.executeCommand('vscode.diff', previousTmpFile, tmpFile, title, {
         //     preview: true,
         //     viewColumn: ViewColumn.One,

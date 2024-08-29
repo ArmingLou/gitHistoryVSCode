@@ -113,8 +113,12 @@ class Commit extends React.Component<CommitProps, CommitState> {
             // f0.relativePath = '';
             this.onActionFile(
                 {
-                    uri: { fsPath: globalThis.settings.relativePath as string } as FsUri,
-                    status: Status.Deleted,
+                    uri: {
+                        scheme: 'error', //令其将会报错，编辑器打开错误信息。
+                        fragment: 'Unknown Git file status',
+                        fsPath: globalThis.settings.relativePath as string,
+                    } as FsUri,
+                    status: Status.Unknown,
                     relativePath: globalThis.settings.relativePath as string,
                 } as CommittedFile,
                 'view',
